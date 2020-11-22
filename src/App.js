@@ -4,6 +4,86 @@ import './App.css';
 const externalBoard = [9, null, null, 6, 7, null, null, null, null, null, null, 6, 8, null, null, 4, 7, null, 8, null, null, null, 1, null, null, null, 3, null, null, 3, null, null, null, null, null, 1, null, null, 5, 4, null, 6, 9, null, null, 6, null, null, null, null, null, 3, null, null, 3, null, null, null, 6, null, null, null, 8, null, 6, 8, null, null, 5, 2, null, null, null, null, null, null, 8, 2, null, null, 6];
 const initialPositions =[0, 3, 4, 11,12,15,16,18,22,26,29,35,38,39,41,42,45,51,54,58,62,64,65,68,69,76,77,80];
 
+const gameStatus = (board) => {
+  // iterate through each position in the array
+  // for each position run the three functions
+  // Check row
+  // Check Column
+  // Check area
+  for (let index = 0; index < board.length; index++) { 
+    const collective = checkRow(index, board) && checkColumn(index, board) && checkArea(index, board)
+    if (! collective) {
+      console.log(`failure at ${index}`)
+      console.log(`check row: ${checkRow(index, board)}`)
+      console.log(`check column: ${checkColumn(index, board)}`)
+      console.log(`check area: ${checkArea(index, board)}`)
+      return false;
+    }
+  }
+  return true;
+}
+
+
+const checkRow = (position, board)  => {
+  const remainder = position % 9;
+  const startPosition = position - remainder;
+  const value = board[position]
+  let row = board.slice(startPosition, startPosition+9);
+  row.splice(remainder, 1)
+  // console.log(`row: ${row}`)
+  // console.log(`postion: ${position}`)
+  // console.log(`board[position]: ${value}`)
+  if (row.includes(value) && value !== null){
+    return false;
+  } else {
+    return true;
+  }
+}
+
+const checkColumn = (position, board) => {
+  const remainder = position % 9;
+  const value = board[position]
+  let arr = [];
+  for (let step = 0; step < 9; step++) {
+    const index = remainder + step*9;
+    if (index !== position){
+      arr.push(
+        board[index]
+      );
+    }
+  }
+  // console.log(`column: ${arr}`)
+
+  if (arr.includes(value) && value !== null){
+    return false;
+  } else {
+    return true;
+  };
+}
+
+const checkArea = (position, board) => {
+  let array = [];
+  const x = position % 9;
+  const y = Math.floor(position/9);
+  const xZero = Math.floor(x/3)*3;
+  const yZero = Math.floor(y/3)*3;
+  const value = board[position];
+  for (let step = 0; step < 9; step++) {
+    const xOne = xZero + step % 3;
+    const yOne = yZero + Math.floor(step/3);
+    const pos = xOne + yOne * 9;
+    if (pos !== position){
+      array.push(board[pos]);
+    }
+  }
+  if (array.includes(value) && value !== null){
+    return false;
+  } else {
+    return true;
+  };
+}
+		
+
 const SquareButton = (props) => {
   return (
     <form className="square">
@@ -28,9 +108,7 @@ const Square = (props) => {
 
   return (
     <form className="square">
-      {/* <input type="text" className="square" value={props.val[props.row*9 + props.col]} onChange={handleChange}/> */}
-      <input type="text" className="square" onChange={handleChange}/>
-
+      <input type="text" className="input_value" onChange={handleChange}/>
     </form>
   );
 }
@@ -38,8 +116,11 @@ const Square = (props) => {
 const Board = () => {
 
   const [values, setValues] = React.useState(
-    // {squares: Array(81).fill(null)},
     {squares: externalBoard},
+  );
+
+  const [status, setStatus] = React.useState(
+    'Sudoku'
   );
 
   //to do - some type of validation of values - 
@@ -50,19 +131,27 @@ const Board = () => {
   //  some type of way of getting random boards for sudoku 
   //    flask app?
   //    input that matches the board
-
+  React.useEffect(() => {
+    const endGame = gameStatus(values.squares);
+    console.log(`endgame: ${endGame}`)
+    if (!endGame){
+      setStatus('Board Conflict: Invalid Move');
+    } else if(!values.squares.includes(null)) {
+      setStatus('Game Complete!');
+    };
+  }, [values]); 
+    
   const renderSquare = (i, v) => {
     const currentPostion = i*9 + v
 
     if (initialPositions.includes(currentPostion)) {
-      console.log(externalBoard[currentPostion])
+      // console.log(externalBoard[currentPostion])
       return( 
         <>
           <SquareButton value={externalBoard[currentPostion]}/>
         </>
       );
     } else {
-      console.log('no output')
       return( 
         <>
           <Square row={i} col={v} val={values} setVal={setValues}/>
@@ -70,8 +159,6 @@ const Board = () => {
       );
     }
   }
-
-  const status = 'Next player: X';
 
   return (
     <div>
